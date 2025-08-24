@@ -3,6 +3,12 @@
 # Pikachu'n 一键启动脚本
 # 适用于小白用户的快速体验
 
+# 检查是否为开发模式
+DEV_MODE=false
+if [[ "$1" == "-d" || "$1" == "--dev" ]]; then
+    DEV_MODE=true
+fi
+
 echo "🚀 Pikachu'n 一键启动脚本"
 echo "========================"
 
@@ -26,9 +32,29 @@ fi
 
 echo "✅ Docker Compose 已安装"
 
-# 构建并启动服务
-echo "🔧 构建并启动服务..."
-docker-compose up -d
+if [ "$DEV_MODE" = true ]; then
+    echo "🔧 开发模式：清理Docker缓存并重新构建..."
+    
+    # 停止并删除现有容器
+    echo "🛑 停止并删除现有容器..."
+    docker-compose down 2>/dev/null || true
+    
+    # 删除旧镜像
+    echo "🗑️ 删除旧镜像..."
+    docker rmi pikachun-pikachun 2>/dev/null || true
+    
+    # 清理Docker构建缓存
+    echo "🧹 清理Docker构建缓存..."
+    docker builder prune -a -f
+    
+    # 重新构建并启动服务
+    echo "🚀 重新构建并启动服务..."
+    docker-compose up -d --build --force-recreate
+else
+    # 构建并启动服务
+    echo "� 构建并启动服务..."
+    docker-compose up -d
+fi
 
 # 等待服务启动
 echo "⏳ 等待服务启动..."
