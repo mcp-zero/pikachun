@@ -1,9 +1,9 @@
 # Pikachun - Real MySQL Binlog Slave Service
 
-[![Go Report Card](https://goreportcard.com/badge/github.com/yourusername/pikachun)](https://goreportcard.com/report/github.com/yourusername/pikachun)
+[![Go Report Card](https://goreportcard.com/badge/github.com/mcp-zero/pikachun)](https://goreportcard.com/report/github.com/mcp-zero/pikachun)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Go Version](https://img.shields.io/badge/go-1.24-blue.svg)](https://github.com/golang/go/releases/tag/go1.24.0)
-[![Build Status](https://github.com/yourusername/pikachun/workflows/Go/badge.svg)](https://github.com/yourusername/pikachun/actions)
+[![Build Status](https://github.com/mcp-zero/pikachun/workflows/Go/badge.svg)](https://github.com/mcp-zero/pikachun/actions)
 
 Pikachun is a MySQL Binlog slave service written in pure Go language. By subscribing to MySQL's Binlog (binary log), it receives and parses the Binlog stream in real-time to capture database change events.
 
@@ -24,7 +24,7 @@ Pikachun is a MySQL Binlog slave service written in pure Go language. By subscri
 
 ## � Demo
 
-![Web Management Interface](docs/images/web-ui.png)
+![Web Management Interface](docs/pikakun.png)
 
 ## 🚀 Quick Start
 
@@ -32,7 +32,7 @@ Pikachun is a MySQL Binlog slave service written in pure Go language. By subscri
 
 ```bash
 # Clone the project
-git clone https://github.com/yourusername/pikachun.git
+git clone https://github.com/mcp-zero/pikachun.git
 cd pikachun
 
 # One-click start all services (including MySQL and Webhook test receiver)
@@ -45,7 +45,7 @@ Access the Web management interface: http://localhost:8668
 
 ```bash
 # Clone the project
-git clone https://github.com/yourusername/pikachun.git
+git clone https://github.com/mcp-zero/pikachun.git
 cd pikachun
 
 # Use Docker to quickly set up MySQL environment (optional)
@@ -139,7 +139,7 @@ log:
 
 ```bash
 # Clone the project
-git clone https://github.com/yourusername/pikachun.git
+git clone https://github.com/mcp-zero/pikachun.git
 cd pikachun
 
 # Install dependencies

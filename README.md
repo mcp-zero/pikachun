@@ -1,6 +1,6 @@
 # Pikachun - 真实 MySQL Binlog 从库服务
 
-[![Go Report Card](https://goreportcard.com/badge/github.com/yourusername/pikachun)](https://goreportcard.com/report/github.com/yourusername/pikachun)
+[![Go Report Card](https://goreportcard.com/badge/github.com/yourusername/pikachun)]()
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Go Version](https://img.shields.io/badge/go-1.24-blue.svg)](https://github.com/golang/go/releases/tag/go1.24.0)
 [![Build Status](https://github.com/yourusername/pikachun/workflows/Go/badge.svg)](https://github.com/yourusername/pikachun/actions)
@@ -24,7 +24,7 @@ Pikachun 是一个用纯 Go 语言编写的 MySQL Binlog 从库服务，通过�
 
 ## � 演示
 
-![Web管理界面](docs/images/web-ui.png)
+![Web管理界面](docs/pikakun.png)
 
 ## 🚀 快速开始
 
@@ -166,6 +166,30 @@ docker run -d \
   -v $(pwd)/logs:/app/logs \
   pikachun
 ```
+
+## 📦 GitHub Packages 部署
+
+项目支持将 Docker 镜像推送到 GitHub Packages，方便在 GitHub Actions 或其他 CI/CD 流程中使用。
+
+### 构建和推送镜像
+
+1. 确保你已经安装了 Docker 并正在运行。
+2. 创建一个 GitHub Personal Access Token (PAT) 并将其设置为环境变量：
+   ```bash
+   export GITHUB_TOKEN=your_github_token
+   ```
+3. 运行构建和推送脚本：
+   ```bash
+   ./build-and-push.sh
+   ```
+
+脚本会自动完成以下操作：
+- 构建 Docker 镜像
+- 给镜像打上 GitHub Packages 标签
+- 登录到 GitHub Container Registry
+- 推送镜像到 GitHub Packages
+
+推送完成后，镜像将可以在 `ghcr.io/mcp-zero/pikachun:latest` 访问。
 
 ## 🧪 测试
 
