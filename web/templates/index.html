@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.title}}</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>Pikachun 数据库监听服务</h1>
+            <div class="status-indicator">
+                <span class="status-dot active"></span>
+                <span>服务运行中</span>
+            </div>
+        </header>
+
+        <nav class="nav-tabs">
+            <button class="tab-btn active" data-tab="tasks">任务管理</button>
+            <button class="tab-btn" data-tab="logs">事件日志</button>
+            <button class="tab-btn" data-tab="status">系统状态</button>
+            <!-- <button class="tab-btn" data-tab="binlog">Binlog监控</button> -->
+            <button class="tab-btn" data-tab="metrics">性能指标</button>
+        </nav>
+
+        <!-- 任务管理面板 -->
+        <div id="tasks" class="tab-content active">
+            <div class="panel">
+                <div class="panel-header">
+                    <h2>监听任务</h2>
+                    <button class="btn btn-primary" onclick="showCreateTaskModal()">
+                        <span class="icon">+</span>
+                        创建任务
+                    </button>
+                </div>
+                <div class="panel-body">
+                    <div class="table-container">
+                        <table class="data-table" id="tasksTable">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>任务名称</th>
+                                    <th>数据库</th>
+                                    <th>数据表</th>
+                                    <th>事件类型</th>
+                                    <th>回调地址</th>
+                                    <th>状态</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- 动态加载 -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="pagination" id="tasksPagination">
+                        <!-- 动态加载 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 事件日志面板 -->
+        <div id="logs" class="tab-content">
+            <div class="panel">
+                <div class="panel-header">
+                    <h2>事件日志</h2>
+                    <div class="filters">
+                        <select id="taskFilter">
+                            <option value="">所有任务</option>
+                        </select>
+                        <button class="btn btn-secondary" onclick="loadEventLogs()">刷新</button>
+                    </div>
+                </div>
+                <div class="panel-body">
+                    <div class="table-container">
+                        <table class="data-table" id="logsTable">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>任务</th>
+                                    <th>数据库</th>
+                                    <th>数据表</th>
+                                    <th>事件类型</th>
+                                    <th>状态</th>
+                                    <th>时间</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- 动态加载 -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="pagination" id="logsPagination">
+                        <!-- 动态加载 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 系统状态面板 -->
+        <div id="status" class="tab-content">
+            <div class="panel">
+                <div class="panel-header">
+                    <h2>系统状态</h2>
+                </div>
+                <div class="panel-body">
+                    <div class="status-grid">
+                        <div class="status-card">
+                            <div class="status-value" id="activeTasksCount">-</div>
+                            <div class="status-label">活跃任务</div>
+                        </div>
+                        <div class="status-card">
+                            <div class="status-value" id="systemStatus">-</div>
+                            <div class="status-label">系统状态</div>
+                        </div>
+                        <div class="status-card">
+                            <div class="status-value" id="systemVersion">-</div>
+                            <div class="status-label">版本信息</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 性能指标面板 -->
+        <div id="metrics" class="tab-content">
+            <div class="panel">
+                <div class="panel-header">
+                    <h2>性能指标</h2>
+                    <button class="btn btn-secondary" onclick="loadMetrics()">刷新</button>
+                </div>
+                <div class="panel-body">
+                    <!-- <div class="status-grid">
+                        <div class="status-card">
+                            <div class="status-value" id="eventsProcessed">-</div>
+                            <div class="status-label">已处理事件</div>
+                        </div>
+                        <div class="status-card">
+                            <div class="status-value" id="eventsPerSecond">-</div>
+                            <div class="status-label">事件/秒</div>
+                        </div>
+                        <div class="status-card">
+                            <div class="status-value" id="errorRate">-</div>
+                            <div class="status-label">错误率</div>
+                        </div>
+                        <div class="status-card">
+                            <div class="status-value" id="uptimeSeconds">-</div>
+                            <div class="status-label">运行时间(秒)</div>
+                        </div>
+                    </div> -->
+                    <div class="panel" style="margin-top: 20px;">
+                        <div class="panel-header">
+                            <h3>Canal 状态详情</h3>
+                        </div>
+                        <div class="panel-body">
+                            <div class="architecture-info" id="architectureInfo">
+                                <p>🏗️ <strong id="architectureType">Enhanced Canal Architecture</strong></p>
+                                <p id="connectionPoolInfo">📋 连接池: <span id="connectionPoolStatus">-</span></p>
+                                <p id="instanceCountInfo">🔢 实例数量: <span id="instanceCount">-</span></p>
+                                <p id="memoryUsageInfo">💾 内存使用: <span id="memoryUsage">-</span></p>
+                                <p id="runningStatusInfo">⚡ 运行状态: <span id="runningStatus">-</span></p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="panel" style="margin-top: 20px;">
+                        <div class="panel-header">
+                            <h3>实例详情</h3>
+                        </div>
+                        <div class="panel-body">
+                            <div class="table-container">
+                                <table class="data-table" id="instancesTable">
+                                    <thead>
+                                        <tr>
+                                            <th>实例ID</th>
+                                            <th>运行状态</th>
+                                            <th>Binlog位置</th>
+                                            <th>最后事件</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="instancesTableBody">
+                                        <!-- 动态加载 -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 创建任务模态框 -->
+    <div id="createTaskModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>创建监听任务</h3>
+                <span class="close" onclick="hideCreateTaskModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="createTaskForm">
+                    <div class="form-group">
+                        <label for="taskName">任务名称</label>
+                        <input type="text" id="taskName" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="taskDatabase">数据库名</label>
+                        <input type="text" id="taskDatabase" name="database" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="taskTable">数据表名</label>
+                        <input type="text" id="taskTable" name="table" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="taskEventTypes">事件类型</label>
+                        <div class="checkbox-group">
+                            <label><input type="checkbox" value="INSERT" checked> INSERT</label>
+                            <label><input type="checkbox" value="UPDATE" checked> UPDATE</label>
+                            <label><input type="checkbox" value="DELETE" checked> DELETE</label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="taskCallbackUrl">回调地址</label>
+                        <input type="url" id="taskCallbackUrl" name="callback_url" required 
+                               placeholder="http://example.com/webhook">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="hideCreateTaskModal()">取消</button>
+                <button type="button" class="btn btn-primary" onclick="createTask()">创建</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 事件日志详情模态框 -->
+    <div id="logDetailModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>事件日志详情</h3>
+                <span class="close" onclick="hideLogDetailModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="log-detail-content">
+                    <div class="form-group">
+                        <label>ID:</label>
+                        <span id="logDetailId"></span>
+                    </div>
+                    <div class="form-group">
+                        <label>任务名称:</label>
+                        <span id="logDetailTaskName"></span>
+                    </div>
+                    <div class="form-group">
+                        <label>数据库:</label>
+                        <span id="logDetailDatabase"></span>
+                    </div>
+                    <div class="form-group">
+                        <label>数据表:</label>
+                        <span id="logDetailTable"></span>
+                    </div>
+                    <div class="form-group">
+                        <label>事件类型:</label>
+                        <span id="logDetailEventType"></span>
+                    </div>
+                    <div class="form-group">
+                        <label>状态:</label>
+                        <span id="logDetailStatus"></span>
+                    </div>
+                    <div class="form-group">
+                        <label>创建时间:</label>
+                        <span id="logDetailCreatedAt"></span>
+                    </div>
+                    <div class="form-group">
+                        <label>数据:</label>
+                        <pre id="logDetailData" class="code-block"></pre>
+                    </div>
+                    <div class="form-group" id="logDetailErrorGroup" style="display: none;">
+                        <label>错误信息:</label>
+                        <pre id="logDetailError" class="code-block error-text"></pre>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="hideLogDetailModal()">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>

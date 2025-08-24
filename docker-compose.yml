@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  # Pikachu'n 服务
+  pikachun:
+    build: .
+    container_name: pikachun
+    ports:
+      - "8668:8668"
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    environment:
+      - PIKACHUN_CANAL_HOST=mysql
+      - PIKACHUN_CANAL_PORT=3306
+      - PIKACHUN_CANAL_USERNAME=root
+      - PIKACHUN_CANAL_PASSWORD=pikachun123
+    depends_on:
+      - mysql
+    restart: unless-stopped
+    networks:
+      - pikachun-network
+
+  # MySQL 数据库
+  mysql:
+    image: mysql:8.0
+    container_name: pikachun-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: pikachun123
+      MYSQL_DATABASE: testdb
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./mysql.cnf:/etc/mysql/conf.d/mysql.cnf
+      - ./test-data.sql:/app/test-data.sql
+    restart: unless-stopped
+    networks:
+      - pikachun-network
+    command: --log-bin=mysql-bin --binlog-format=ROW --server-id=1
+
+  # 简单的Webhook接收服务（用于测试）
+  webhook:
+    image: mendhak/http-https-echo:27
+    container_name: pikachun-webhook
+    ports:
+      - "9669:9669"
+    restart: unless-stopped
+    networks:
+      - pikachun-network
+
+networks:
+  pikachun-network:
+    driver: bridge
+
+volumes:
+  mysql_data:

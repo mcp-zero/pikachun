@@ -1,0 +1,58 @@
+# Pikachun 配置文件
+
+server:
+  host: "0.0.0.0" # 服务器地址
+  port: "8668" # 服务器端口
+
+database:
+  dsn: "./data/pikachun.db" # 数据库连接字符串
+
+canal:
+  host: "mysql" # Docker网络中的MySQL服务名
+  port: 3306 # MySQL端口
+  username: "root" # MySQL用户名
+  password: "pikachun123" # MySQL密码
+  charset: "utf8mb4" # 字符集
+  server_id: 1001 # 服务器 ID
+  
+  # binlog 配置
+  binlog:
+    # 起始位置 (空表示从最新位置开始)
+    filename: "" # binlog 文件名
+    position: 4 # binlog 位置
+    # GTID 支持
+    gtid_enabled: true
+    
+  # 监听配置
+  watch:
+    # 监听的数据库 (空表示监听所有)
+    databases: ["testdb"]
+    # 监听的表 (空表示监听所有)
+    tables: []
+    # 监听的事件类型
+    event_types: ["INSERT", "UPDATE", "DELETE"]
+    
+  # 重连配置
+  reconnect:
+    max_attempts: 10 # 最大重连次数
+    interval: "5s" # 重连间隔
+    
+  # 性能配置
+  performance:
+    # 事件缓冲区大小
+    event_buffer_size: 1000
+    # 批处理大小
+    batch_size: 100
+
+log:
+  level: "debug" # 日志级别 (debug, info, warn, error)
+  file: "./logs/pikachun.log" # 日志文件路径
+  format: "json" # 日志格式 (text, json)
+  max_size: 100 # 日志文件最大大小 (MB)
+  max_age: 30 # 日志文件最大保存天数
+  max_backups: 10 # 最大备份文件数
+
+# sqllite 数据库存储配置
+database_storage:
+  # 是否启用 sqllite 数据库存储功能
+  enabled: true
