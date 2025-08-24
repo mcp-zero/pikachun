@@ -1,8 +1,8 @@
 /*
  * @Author: lucklidi@126.com
  * @Date: 2025-08-21 18:01:23
- * @LastEditTime: 2025-08-23 16:34:04
- * @LastEditors: lucklidi@126.com
+ * @LastEditTime: 2025-08-24 18:54:53
+ * @LastEditors: lidi10@staff.weibo.com
  * @Description:
  * Copyright (c) 2023 by pikachun
  */
@@ -174,4 +174,14 @@ func (a *CanalServiceAdapter) DeleteTask(taskID uint) error {
 // GetStatus 获取状态
 func (a *CanalServiceAdapter) GetStatus() map[string]interface{} {
 	return a.enhanced.GetStatus()
+}
+
+// StopInstance 停止指定实例
+func (a *CanalServiceAdapter) StopInstance(instanceID uint) error {
+	return a.enhanced.StopInstance(instanceID)
+}
+
+// UpdateInstance 更新指定实例
+func (a *CanalServiceAdapter) UpdateInstance(instanceID uint, task *database.Task) error {
+	return a.enhanced.UpdateInstance(instanceID, task)
 }

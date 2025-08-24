@@ -102,6 +102,77 @@ func (s *EnhancedCanalService) Start(ctx context.Context) error {
 	return nil
 }
 
+// Update 某个实例
+func (s *EnhancedCanalService) UpdateInstance(instanceID uint, task *database.Task) error {
+	// 先停止
+	// 日志
+	s.logger.Printf("Updating: Stop instance %s", instanceID)
+	if err := s.StopInstance(instanceID); err != nil {
+		s.logger.Printf("Updating: Stop Failed to stop instance %s: %v", instanceID, err)
+		return err
+	}
+	// 再启动
+	// 日志
+	s.logger.Printf("Updating: Start instance %s", instanceID)
+	// 活跃状态才创建
+	if task.Status == "active" {
+		task.ID = instanceID // 重新添加id
+		if err := s.CreateTask(task); err != nil {
+			s.logger.Printf("Updating: Satrt Failed to stop instance %s: %v", instanceID, err)
+			return err
+		}
+	}
+	// 日志
+	s.logger.Printf("Updating: Successfully updated instance %s", instanceID)
+
+	return nil
+}
+
+// Stop 某个实例
+func (s *EnhancedCanalService) StopInstance(instanceID uint) error {
+
+	if !s.running {
+		// 直接返回
+		s.logger.Printf("Enhanced Canal service not running")
+		return nil
+	}
+
+	instanceValue, ok := s.instances.Load(fmt.Sprintf("task-%d", instanceID))
+	if !ok {
+		// 直接返回
+		s.logger.Printf("Instance %s not found", instanceID)
+		return nil
+	}
+
+	// 停止订阅
+	s.logger.Printf("Stopping instance %s", instanceID)
+
+	// 获取任务信息以用于取消订阅
+	oldTask, err := s.taskService.GetTask(instanceID)
+	if err == nil {
+		// 取消订阅处理器
+		s.logger.Printf("Unsubscribing handlers for task %d", instanceID)
+		if instance, ok := instanceValue.(canal.CanalInstance); ok {
+			handlerName1 := fmt.Sprintf("webhook-%d", instanceID)
+			handlerName2 := fmt.Sprintf("db-%d", instanceID)
+			if err := instance.Unsubscribe(oldTask.Database, oldTask.Table, handlerName1); err != nil {
+				s.logger.Printf("Failed to unsubscribe webhook handler for task %d: %v", instanceID, err)
+			}
+			if err := instance.Unsubscribe(oldTask.Database, oldTask.Table, handlerName2); err != nil {
+				s.logger.Printf("Failed to unsubscribe database handler for task %d: %v", instanceID, err)
+			}
+
+		}
+	}
+
+	// 日志记录
+	s.logger.Printf("Instance %s stopped", instanceID)
+	// 删除实例
+	s.instances.Delete(fmt.Sprintf("task-%d", instanceID))
+
+	return nil
+}
+
 // Stop 停止增强的Canal服务
 func (s *EnhancedCanalService) Stop() error {
 	s.mu.Lock()
@@ -147,18 +218,12 @@ func (s *EnhancedCanalService) CreateTask(task *database.Task) error {
 	// 创建基于真实 MySQL binlog 的 Canal 实例
 	s.logger.Printf("🔧 Creating MySQL canal instance for task %d (database: %s, table: %s)", task.ID, task.Database, task.Table)
 
-	// 检查是否是模拟任务（ID >= 1000），如果是则创建模拟实例而不是真实实例
 	var instance canal.CanalInstance
-	if task.ID >= 1000 {
-		s.logger.Printf("🔧 Creating mock canal instance for mock task %d", task.ID)
-		instance = NewMockCanalInstance(instanceID)
-	} else {
-		var err error
-		instance, err = canal.NewMySQLCanalInstance(instanceID, s.config, s.logger, s.metaManager)
-		if err != nil {
-			s.logger.Printf("❌ Failed to create mysql canal instance for task %d: %v", task.ID, err)
-			return fmt.Errorf("failed to create mysql canal instance for task %d: %v", task.ID, err)
-		}
+	var err error
+	instance, err = canal.NewMySQLCanalInstance(instanceID, s.config, s.logger, s.metaManager)
+	if err != nil {
+		s.logger.Printf("❌ Failed to create mysql canal instance for task %d: %v", task.ID, err)
+		return fmt.Errorf("failed to create mysql canal instance for task %d: %v", task.ID, err)
 	}
 	s.logger.Printf("✅ Canal instance created for task %d", task.ID)
 
@@ -208,17 +273,11 @@ func (s *EnhancedCanalService) CreateTask(task *database.Task) error {
 		ctx = context.Background()
 	}
 
-	// 检查是否是加载现有任务的场景（通过任务ID判断）
-	// 如果是加载现有任务且实例ID >= 1000，则跳过实际启动以避免数据库连接
-	if task.ID >= 1000 {
-		s.logger.Printf("⏭️  Skipping instance start for mock task %d during loading", task.ID)
-	} else {
-		if err := instance.Start(ctx); err != nil {
-			s.logger.Printf("❌ Failed to start mysql canal instance for task %d: %v", task.ID, err)
-			return fmt.Errorf("failed to start mysql canal instance for task %d: %v", task.ID, err)
-		}
-		s.logger.Printf("✅ instance.Start completed for task %d", task.ID)
+	if err := instance.Start(ctx); err != nil {
+		s.logger.Printf("❌ Failed to start mysql canal instance for task %d: %v", task.ID, err)
+		return fmt.Errorf("failed to start mysql canal instance for task %d: %v", task.ID, err)
 	}
+	s.logger.Printf("✅ instance.Start completed for task %d", task.ID)
 
 	s.instances.Store(instanceID, instance)
 	s.logger.Printf("✅ Canal instance started successfully for task %d", task.ID)
@@ -227,22 +286,122 @@ func (s *EnhancedCanalService) CreateTask(task *database.Task) error {
 	return nil
 }
 
-// DeleteTask 删除监听任务
-func (s *EnhancedCanalService) DeleteTask(taskID uint) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+// UpdateTask 更新监听任务
+func (s *EnhancedCanalService) UpdateTask(taskID uint, task *database.Task) error {
 
 	instanceID := fmt.Sprintf("task-%d", taskID)
 
+	// 先停止现有的实例（如果存在）
 	if instanceValue, exists := s.instances.Load(instanceID); exists {
 		if instance, ok := instanceValue.(canal.CanalInstance); ok {
+			// 获取任务信息以用于取消订阅
+			oldTask, err := s.taskService.GetTask(taskID)
+			if err == nil {
+				// 取消订阅处理器
+				s.logger.Printf("Unsubscribing handlers for task %d", taskID)
+				handlerName1 := fmt.Sprintf("webhook-%d", taskID)
+				handlerName2 := fmt.Sprintf("db-%d", taskID)
+				if err := instance.Unsubscribe(oldTask.Database, oldTask.Table, handlerName1); err != nil {
+					s.logger.Printf("Failed to unsubscribe webhook handler for task %d: %v", taskID, err)
+				}
+				if err := instance.Unsubscribe(oldTask.Database, oldTask.Table, handlerName2); err != nil {
+					s.logger.Printf("Failed to unsubscribe database handler for task %d: %v", taskID, err)
+				}
+			} else {
+				s.logger.Printf("Failed to get old task info for task %d: %v", taskID, err)
+			}
+
+			// 移除监听
+			s.logger.Printf("Removing canal instance for task %d", taskID)
+
+			if err := instance.Stop(); err != nil {
+				s.logger.Printf("Failed to stop instance %s: %v", instanceID, err)
+				// 即使停止失败，也继续删除实例以避免实例泄露
+			} else {
+				s.logger.Printf("Successfully stopped canal instance for task %d", taskID)
+			}
+		}
+	}
+
+	// 确保从sync.Map中删除实例
+	s.instances.Delete(instanceID)
+	s.logger.Printf("Deleted canal instance for task %d", taskID)
+
+	// 如果任务状态是活跃的，重新创建实例
+	if task.Status == "active" {
+		// 创建新的Canal实例
+		instance, err := canal.NewMySQLCanalInstance(instanceID, s.config, s.logger, s.metaManager)
+		if err != nil {
+			s.logger.Printf("Failed to create mysql canal instance for task %d: %v", taskID, err)
+			return fmt.Errorf("创建Canal实例失败: %v", err)
+		}
+
+		// 启动实例 检查 s.ctx 是否已初始化，如果没有则使用一个临时的 context
+		ctx := s.ctx
+		if ctx == nil {
+			ctx = context.Background()
+		}
+
+		if err := instance.Start(ctx); err != nil {
+			s.logger.Printf("Failed to start canal instance for task %d: %v", taskID, err)
+			return fmt.Errorf("启动Canal实例失败: %v", err)
+		}
+
+		// 存储实例
+		s.instances.Store(instanceID, instance)
+		s.logger.Printf("Task %d updated and instance restarted successfully", taskID)
+	} else {
+		s.logger.Printf("Task %d updated successfully, status is inactive, not starting instance", taskID)
+	}
+
+	return nil
+}
+
+// DeleteTask 删除监听任务
+func (s *EnhancedCanalService) DeleteTask(taskID uint) error {
+
+	instanceID := fmt.Sprintf("task-%d", taskID)
+
+	// 先尝试获取实例并停止它
+	s.logger.Printf("Stopping canal instance for task %d", taskID)
+	if instanceValue, exists := s.instances.Load(instanceID); exists {
+		s.logger.Printf("Instance %s found for task %d", instanceID, taskID)
+		if instance, ok := instanceValue.(canal.CanalInstance); ok {
+			// 获取任务信息以用于取消订阅
+			task, err := s.taskService.GetTask(taskID)
+			// 停止任务的Canal实例
+			s.logger.Printf("Stopping canal instance %s for task %d", instanceID, taskID)
 			if err := instance.Stop(); err != nil {
 				s.logger.Printf("Failed to stop instance %s: %v", instanceID, err)
 			}
-			s.instances.Delete(instanceID)
-			s.logger.Printf("Deleted canal instance for task %d", taskID)
+			if err == nil {
+				// 取消订阅处理器
+				s.logger.Printf("Unsubscribing handlers for task %d", taskID)
+				handlerName1 := fmt.Sprintf("webhook-%d", taskID)
+				handlerName2 := fmt.Sprintf("db-%d", taskID)
+				if err := instance.Unsubscribe(task.Database, task.Table, handlerName1); err != nil {
+					s.logger.Printf("Failed to unsubscribe webhook handler for task %d: %v", taskID, err)
+				}
+				if err := instance.Unsubscribe(task.Database, task.Table, handlerName2); err != nil {
+					s.logger.Printf("Failed to unsubscribe database handler for task %d: %v", taskID, err)
+				}
+			} else {
+				s.logger.Printf("Failed to get task info for task %d: %v", taskID, err)
+			}
+
+			s.logger.Printf("Stopping canal instance for task %d", taskID)
+			if err := instance.Stop(); err != nil {
+				s.logger.Printf("Failed to stop instance %s: %v", instanceID, err)
+				// 即使停止失败，也继续删除实例以避免实例泄露
+			} else {
+				s.logger.Printf("Successfully stopped canal instance for task %d", taskID)
+			}
 		}
 	}
+
+	// 确保从sync.Map中删除实例
+	s.instances.Delete(instanceID)
+	s.logger.Printf("Deleted canal instance for task %d", taskID)
 
 	return nil
 }

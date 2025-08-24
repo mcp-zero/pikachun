@@ -89,7 +89,19 @@ func (s *TaskService) UpdateTask(id uint, updates *databaseCom.Task) error {
 
 // DeleteTask 删除任务
 func (s *TaskService) DeleteTask(id uint) error {
-	return s.db.Delete(&databaseCom.Task{}, id).Error
+	// 物理删除任务，包括关联的事件日志
+	err := s.db.Transaction(func(tx *gorm.DB) error {
+		// 先删除关联的事件日志
+		if err := tx.Where("task_id = ?", id).Delete(&databaseCom.EventLog{}).Error; err != nil {
+			return err
+		}
+		// 再物理删除任务
+		if err := tx.Unscoped().Delete(&databaseCom.Task{}, id).Error; err != nil {
+			return err
+		}
+		return nil
+	})
+	return err
 }
 
 // GetActiveTasks 获取活跃的任务

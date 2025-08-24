@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"pikachun/internal/config"
+	"pikachun/internal/database"
 )
 
 // MySQLCanalInstance 基于真实 MySQL binlog 的 Canal 实例实现
@@ -189,6 +190,16 @@ func (c *MySQLCanalInstance) Stop() error {
 	c.status.Running = false
 
 	c.logger.Printf("✅ MySQL Canal Instance %s stopped", c.id)
+	return nil
+}
+
+// StopInstance 停止指定实例
+func (c *MySQLCanalInstance) StopInstance(instanceID uint) error {
+	return nil
+}
+
+// UpdateTask 更新任务
+func (c *MySQLCanalInstance) UpdateInstance(instanceID uint, task *database.Task) error {
 	return nil
 }
 

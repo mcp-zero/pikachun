@@ -20,7 +20,8 @@ type Server struct {
 	taskService      *service.TaskService
 	canalService     service.CanalServiceInterface
 	enhancedHandlers *EnhancedHandlers
-	router           *gin.Engine
+	// enhancedCanalService *service.EnhancedCanalService
+	router *gin.Engine
 }
 
 // CanalServiceAdapter Canal服务适配器
@@ -31,13 +32,23 @@ type CanalServiceAdapter struct {
 // Start 启动服务
 func (a *CanalServiceAdapter) Start(ctx context.Context) error {
 	// 增强服务已经在main中启动，这里返回nil
-	return nil
+	return a.enhanced.Start(ctx)
 }
 
 // Stop 停止服务
 func (a *CanalServiceAdapter) Stop() error {
 	// 增强服务会在main中停止，这里不需要操作
-	return nil
+	return a.enhanced.Stop()
+}
+
+// Stop Instance 停止指定实例
+func (a *CanalServiceAdapter) StopInstance(instanceID uint) error {
+	return a.enhanced.StopInstance(instanceID)
+}
+
+// UpdateInstance 更新指定实例
+func (a *CanalServiceAdapter) UpdateInstance(instanceID uint, task *database.Task) error {
+	return a.enhanced.UpdateInstance(instanceID, task)
 }
 
 // CreateTask 创建任务
@@ -243,6 +254,22 @@ func (s *Server) updateTaskHandler(c *gin.Context) {
 		return
 	}
 
+	// 日志记录
+	fmt.Printf("Task %d updated, updating associated canal instance if exists", id)
+	if s.canalService.UpdateInstance(id, updates) != nil {
+		// 日错误志记录
+		fmt.Printf("Error updating canal instance for updated task %d", id)
+		// error
+		fmt.Printf("Error updating canal instance for updated task: %s", err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "更新Canal任务失败: " + err.Error(),
+		})
+		return
+	}
+
+	//日志记录
+	fmt.Printf("Canal instance for task %d updated", id)
+
 	c.JSON(http.StatusOK, gin.H{
 		"message": "任务更新成功",
 	})
@@ -264,6 +291,19 @@ func (s *Server) deleteTaskHandler(c *gin.Context) {
 		})
 		return
 	}
+
+	// 日志记录
+	fmt.Printf("Task %d deleted, removing associated canal instance if exists", id)
+	if err := s.canalService.StopInstance(id); err != nil {
+		// 错误日志
+		fmt.Printf("Error stopping canal instance for deleted task %d: %s", id, err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "停止Canal任务失败: " + err.Error(),
+		})
+		return
+	}
+	//日志记录
+	fmt.Printf("Canal instance for task %d stopped", id)
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "任务删除成功",

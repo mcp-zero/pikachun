@@ -3,6 +3,8 @@ package canal
 import (
 	"context"
 	"time"
+
+	"pikachun/internal/database"
 )
 
 // EventType 事件类型
@@ -91,6 +93,10 @@ type TableMeta struct {
 type CanalInstance interface {
 	Start(ctx context.Context) error
 	Stop() error
+	// 停止某个实例
+	StopInstance(instanceID uint) error
+	// 更新某个实例
+	UpdateInstance(instanceID uint, task *database.Task) error
 	Subscribe(schema, table string, handler EventHandler) error
 	Unsubscribe(schema, table string, handlerName string) error
 	GetStatus() InstanceStatus

@@ -8,7 +8,7 @@ database:
   dsn: "./data/pikachun.db" # 数据库连接字符串
 
 canal:
-  host: "mysql" # Docker网络中的MySQL服务名
+  host: "mysql" # 自测可以使用IP 例如：127.0.0.1  #Docker网络中的MySQL服务名 例如：mysql
   port: 3306 # MySQL端口
   username: "root" # MySQL用户名
   password: "pikachun123" # MySQL密码

@@ -4,6 +4,9 @@ FROM golang:1.24-alpine AS builder
 # 设置工作目录
 WORKDIR /app
 
+# 配置Go代理以使用国内镜像源
+ENV GOPROXY=https://goproxy.cn,direct
+
 # 复制go mod和sum文件
 COPY go.mod go.sum ./
 
@@ -14,8 +17,7 @@ RUN go mod download
 COPY . .
 
 # 构建应用
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o pikachun .
-
+RUN CGO_ENABLED=0 GOOS=linux go build -a -o pikachun .
 # 使用轻量级的Alpine镜像作为运行环境
 FROM alpine:latest
 

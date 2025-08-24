@@ -44,7 +44,7 @@ services:
     image: mendhak/http-https-echo:27
     container_name: pikachun-webhook
     ports:
-      - "9669:9669"
+      - "9669:8080"
     restart: unless-stopped
     networks:
       - pikachun-network
