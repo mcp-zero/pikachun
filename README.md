@@ -241,3 +241,38 @@ DELETE FROM users WHERE id = 1;
 ---
 
 **Pikachun** - 让 MySQL Binlog 监听变得简单！ 🚀
+
+## 🛠️ 开发注意事项
+
+在开发过程中修改代码后，需要确保 Docker 镜像包含最新的代码变更。有以下几种方式：
+
+### 方式一：强制重新构建（推荐）
+```bash
+# 删除旧镜像并重新构建
+docker-compose down
+docker rmi pikachun_pikachun  # 删除旧镜像
+docker-compose up -d --build  # 重新构建并启动
+
+# 或者使用一行命令强制重新构建
+docker-compose up -d --build --force-recreate
+```
+
+### 方式二：清理构建缓存
+```bash
+# 清理 Docker 构建缓存
+docker builder prune -a
+
+# 重新构建
+docker-compose up -d --build
+```
+
+### 方式三：在 Dockerfile 中添加版本标识
+在 Dockerfile 中添加一个构建参数来强制重新构建：
+```dockerfile
+# 添加构建参数
+ARG BUILD_VERSION=1
+RUN echo "Build version: $BUILD_VERSION"
+
+# 在构建时传递不同的版本号
+docker-compose build --build-arg BUILD_VERSION=$(date +%s)
+```

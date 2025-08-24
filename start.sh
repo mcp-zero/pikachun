@@ -95,6 +95,41 @@ build_project() {
     fi
 }
 
+# 开发模式：清理Docker缓存并重新构建
+dev_mode() {
+    print_info "进入开发模式..."
+    
+    # 检查Docker环境
+    if ! command_exists docker; then
+        print_error "未找到Docker，请先安装Docker"
+        exit 1
+    fi
+    
+    if ! command_exists docker-compose; then
+        print_error "未找到docker-compose，请先安装docker-compose"
+        exit 1
+    fi
+    
+    print_info "停止并删除现有容器..."
+    docker-compose down 2>/dev/null || true
+    
+    print_info "删除旧镜像..."
+    docker rmi pikachun-pikachun 2>/dev/null || true
+    
+    print_info "清理Docker构建缓存..."
+    docker builder prune -a -f
+    
+    print_info "重新构建并启动服务..."
+    if docker-compose up -d --build --force-recreate; then
+        print_success "开发环境启动成功！"
+        print_info "Web管理界面: http://localhost:8668"
+        print_info "Webhook测试接收器: http://localhost:9669"
+    else
+        print_error "开发环境启动失败，请检查错误信息"
+        exit 1
+    fi
+}
+
 # 启动服务
 start_service() {
     print_info "启动 Pikachun 服务..."
@@ -117,11 +152,13 @@ show_help() {
     echo "  -h, --help     显示帮助信息"
     echo "  -b, --build    仅编译项目"
     echo "  -c, --check    检查环境配置"
+    echo "  -d, --dev      开发模式（清理Docker缓存并重新构建）"
     echo ""
     echo "示例:"
     echo "  ./start.sh          # 编译并启动服务"
     echo "  ./start.sh --build  # 仅编译项目"
     echo "  ./start.sh --check  # 检查环境配置"
+    echo "  ./start.sh --dev    # 开发模式，清理Docker缓存并重新构建"
 }
 
 # 主函数

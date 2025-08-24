@@ -106,3 +106,34 @@ docker-compose restart
 ---
 
 享受使用 Pikachu'n 的体验！如有任何问题，请查看完整文档或提交 issue。
+
+## 🛠️ 开发注意事项
+
+如果您在开发过程中修改了代码，需要注意以下几点以确保 Docker 容器运行的是最新代码：
+
+### 1. 强制重新构建镜像
+```bash
+# 停止并删除现有容器
+docker-compose down
+
+# 删除旧镜像
+docker rmi pikachun_pikachun
+
+# 重新构建并启动
+docker-compose up -d --build
+```
+
+### 2. 清理 Docker 构建缓存
+```bash
+# 清理构建缓存
+docker builder prune -a
+
+# 重新构建
+docker-compose up -d --build
+```
+
+### 3. 使用 --force-recreate 参数
+```bash
+# 强制重新创建容器
+docker-compose up -d --build --force-recreate
+```
