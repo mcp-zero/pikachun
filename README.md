@@ -1,9 +1,9 @@
 # Pikachun - 真实 MySQL Binlog 从库服务
 
-[![Go Report Card](https://goreportcard.com/badge/github.com/yourusername/pikachun)]()
+[![Go Report Card](https://goreportcard.com/badge/github.com/mcp-zero/pikachun)]()
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Go Version](https://img.shields.io/badge/go-1.24-blue.svg)](https://github.com/golang/go/releases/tag/go1.24.0)
-[![Build Status](https://github.com/yourusername/pikachun/workflows/Go/badge.svg)](https://github.com/yourusername/pikachun/actions)
+[![Build Status](https://github.com/mcp-zero/pikachun/workflows/Go/badge.svg)](https://github.com/mcp-zero/pikachun/actions)
 
 Pikachun 是一个用纯 Go 语言编写的 MySQL Binlog 从库服务，通过订阅 MySQL 的 Binlog（二进制日志），实时接收并解析 Binlog 流，捕获数据库的变更事件。
 
@@ -139,7 +139,7 @@ log:
 
 ```bash
 # 克隆项目
-git clone https://github.com/yourusername/pikachun.git
+git clone https://github.com/mcp-zero/pikachun.git
 cd pikachun
 
 # 安装依赖
